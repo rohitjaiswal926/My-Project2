@@ -1,0 +1,96 @@
+name: Terraform CD Preprod
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  TF_WORKING_DIR: ./enviroment/preprod
+  TERRAFORM_VERSION: "1.14.6"
+  ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+
+jobs:
+  terraform-cd:
+    name: Terraform CD Apply
+    runs-on: ubuntu-latest
+
+    environment:
+      name: preprod
+
+    concurrency:
+      group: terraform-preprod
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout Main Branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Create Terraform Variables File
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        shell: bash
+        env:
+          TF_VARS: ${{ secrets.TF_VARS }}
+        run: |
+          printf '%s' "$TF_VARS" > terraform.tfvars
+
+      - name: Prepare Azure Credentials
+        id: azure-creds
+        shell: bash
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+          TENANT_ID: ${{ secrets.TENANT_ID }}
+        run: |
+          CREDS="$(jq -n \
+            --arg clientId "$CLIENT_ID" \
+            --arg clientSecret "$CLIENT_SECRET" \
+            --arg subscriptionId "$SUBSCRIPTION_ID" \
+            --arg tenantId "$TENANT_ID" \
+            '{clientId:$clientId,clientSecret:$clientSecret,subscriptionId:$subscriptionId,tenantId:$tenantId}')"
+
+          {
+            echo 'creds<<EOF'
+            echo "$CREDS"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ steps.azure-creds.outputs.creds }}
+
+      - name: Terraform Format
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -input=false
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -input=false -no-color -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -input=false -auto-approve tfplan
+
