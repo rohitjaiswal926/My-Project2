@@ -3,7 +3,7 @@ name: Terraform CI Preprod
 on:
   push:
     branches:
-      - features1
+      - features
   
 
 permissions:
@@ -124,7 +124,7 @@ jobs:
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
-        
+
 
       # 13. Terraform Plan
       - name: Terraform Plan
