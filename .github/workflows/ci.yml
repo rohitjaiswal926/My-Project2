@@ -1,0 +1,134 @@
+name: Terraform CI Preprod
+
+on:
+  push:
+    branches:
+      - features
+permissions:
+  contents: read
+
+env:
+  TF_WORKING_DIR: ./enviroment/preprod
+  TERRAFORM_VERSION: "1.14.6"
+  ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+
+  ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+
+jobs:
+  terraform-ci:
+    name: Terraform CI
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Gitleaks - scan for leaked secrets
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3. Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      # 4. Terraform format check
+      - name: Terraform Format Check
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check -recursive
+
+      # 5. Setup TFLint
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      # 6. Initialize TFLint
+      - name: TFLint Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: tflint --init
+
+      # 7. Run TFLint
+      - name: TFLint Check
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: tflint
+
+      # 8. Create terraform.tfvars from GitHub Secret
+      - name: Create Terraform Variables File
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        shell: bash
+        env:
+          TF_VARS: ${{ secrets.TF_VARS }}
+        run: |
+          set -e
+
+          if [ -z "$TF_VARS" ]; then
+            echo "ERROR: TF_VARS secret is empty."
+            exit 1
+          fi
+
+          printf '%s' "$TF_VARS" > terraform.tfvars
+          chmod 600 terraform.tfvars
+
+      # 9. Prepare Azure credentials
+      - name: Prepare Azure Credentials
+        id: azure-creds
+        shell: bash
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+          TENANT_ID: ${{ secrets.TENANT_ID }}
+        run: |
+          set -e
+
+          for name in CLIENT_ID CLIENT_SECRET SUBSCRIPTION_ID TENANT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "ERROR: $name secret is empty."
+              exit 1
+            fi
+          done
+
+          CREDS="$(jq -n \
+            --arg clientId "$CLIENT_ID" \
+            --arg clientSecret "$CLIENT_SECRET" \
+            --arg subscriptionId "$SUBSCRIPTION_ID" \
+            --arg tenantId "$TENANT_ID" \
+            '{clientId:$clientId,clientSecret:$clientSecret,subscriptionId:$subscriptionId,tenantId:$tenantId}')"
+
+          {
+            echo 'creds<<EOF'
+            echo "$CREDS"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      # 10. Azure Login
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ steps.azure-creds.outputs.creds }}
+
+      # 11. Terraform Init
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -input=false
+
+      # 12. Terraform Validate
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+
+      # 13. Terraform Plan
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -input=false -no-color -var-file=terraform.tfvars
+
+
