@@ -17,8 +17,6 @@ env:
   ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
 
-
-  
 jobs:
   terraform-ci:
     name: Terraform CI
