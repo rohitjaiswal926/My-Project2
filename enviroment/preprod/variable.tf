@@ -1,7 +1,27 @@
-variable "rgs" {}
-variable "vnet" {}
-variable "subnet" {}
-variable "nsg" {}
-variable "public_ip" {}
-variable "virtual_machine" {}
-variable "nic" {}
+variable "rgs" {
+  type = any
+}
+
+variable "vnet" {
+  type = any
+}
+
+variable "subnet" {
+  type = any
+}
+
+variable "nsg" {
+  type = any
+}
+
+variable "public_ip" {
+  type = any
+}
+
+variable "virtual_machine" {
+  type = any
+}
+
+variable "nic" {
+  type = any
+}
