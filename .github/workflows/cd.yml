@@ -37,10 +37,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-
-          
-          
+          terraform_version: ${{ env.TERRAFORM_VERSION }}     
 
       - name: Create Terraform Variables File
         working-directory: ${{ env.TF_WORKING_DIR }}
