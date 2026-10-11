@@ -11,6 +11,7 @@ resource "azurerm_linux_virtual_machine" "virtual" {
   network_interface_ids = each.value.network_interface_ids
 
   disable_password_authentication = false
+  allow_extension_operations = false
 
   os_disk {
     caching              = each.value.caching
