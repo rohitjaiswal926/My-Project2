@@ -78,6 +78,15 @@ jobs:
       - name: Terraform Format
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform fmt -check -recursive
+      
+        # Checkov - Terraform Security Scan
+      - name: Checkov Security Scan
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: ${{ env.TF_WORKING_DIR }}
+          framework: terraform
+          soft_fail: false
+
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
