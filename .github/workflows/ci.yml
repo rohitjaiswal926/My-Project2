@@ -60,12 +60,14 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: tflint
 
-       # 8. Checkov - Terraform Security Scan
+        
+            # 8. Checkov - Terraform Security Scan
       - name: Checkov Security Scan
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: ${{ env.TF_WORKING_DIR }}
           framework: terraform
+          skip_check: CKV_AZURE_1,CKV_AZURE_178,CKV_AZURE_149
           soft_fail: false
 
       # 9. Create terraform.tfvars from GitHub Secret

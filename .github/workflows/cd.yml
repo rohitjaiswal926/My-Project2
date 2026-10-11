@@ -64,6 +64,8 @@ jobs:
             --arg tenantId "$TENANT_ID" \
             '{clientId:$clientId,clientSecret:$clientSecret,subscriptionId:$subscriptionId,tenantId:$tenantId}')"
 
+
+            
           {
             echo 'creds<<EOF'
             echo "$CREDS"
