@@ -28,6 +28,16 @@ module "nsg" {
   nsg        = var.nsg
 }
 
+
+resource "azurerm_subnet_network_security_group_association" "association" {
+  for_each = var.subnet
+
+  subnet_id = module.azurerm_subnet.subnet_ids[each.key]
+
+  network_security_group_id = module.nsg.nsg_ids[
+    replace(each.key, "subnet", "nsg")
+  ]
+}
 module "public_ip" {
   depends_on = [module.azurerm_virtual_network]
   source     = "../../modules/05_azurerm_public_ip"

@@ -69,9 +69,10 @@ jobs:
           framework: terraform
           skip_check: CKV_AZURE_1,CKV_AZURE_178,CKV_AZURE_149
           soft_fail: false
-          
+
 
       # 9. Create terraform.tfvars from GitHub Secret
+      
       - name: Create Terraform Variables File
         working-directory: ${{ env.TF_WORKING_DIR }}
         shell: bash
