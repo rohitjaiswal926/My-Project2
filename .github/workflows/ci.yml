@@ -60,15 +60,30 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: tflint
 
-      # 8. Create terraform.tfvars from GitHub Secret
+
+            # 8. Checkov - Terraform Security Scan
+      - name: Checkov Security Scan
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: ${{ env.TF_WORKING_DIR }}
+          framework: terraform
+          skip_check: CKV_AZURE_1,CKV_AZURE_178,CKV_AZURE_149
+          soft_fail: false
+      # 9. Create terraform.tfvars from GitHub Secret
+
+
+
       - name: Create Terraform Variables File
         working-directory: ${{ env.TF_WORKING_DIR }}
+
         shell: bash
         env:
           TF_VARS: ${{ secrets.TF_VARS }}
         run: |
           set -e
 
+
+          
           if [ -z "$TF_VARS" ]; then
             echo "ERROR: TF_VARS secret is empty."
             exit 1
@@ -77,7 +92,7 @@ jobs:
           printf '%s' "$TF_VARS" > terraform.tfvars
           chmod 600 terraform.tfvars
 
-      # 9. Prepare Azure credentials
+      # 10. Prepare Azure credentials
       - name: Prepare Azure Credentials
         id: azure-creds
         shell: bash
@@ -109,24 +124,24 @@ jobs:
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
-      # 10. Azure Login
+      # 11. Azure Login
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ steps.azure-creds.outputs.creds }}
 
-      # 11. Terraform Init
+      # 12. Terraform Init
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init -input=false
 
-      # 12. Terraform Validate
+      # 13. Terraform Validate
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
 
 
-      # 13. Terraform Plan
+      # 14. Terraform Plan
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform plan -input=false -no-color -var-file=terraform.tfvars
