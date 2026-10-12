@@ -79,11 +79,13 @@ jobs:
         shell: bash
         env:
           TF_VARS: ${{ secrets.TF_VARS }}
+
+          
         run: |
           set -e
 
 
-          
+
           if [ -z "$TF_VARS" ]; then
             echo "ERROR: TF_VARS secret is empty."
             exit 1
