@@ -40,11 +40,19 @@ jobs:
           terraform_version: ${{ env.TERRAFORM_VERSION }}     
 
       - name: Create Terraform Variables File
+
+
+
+
+
         working-directory: ${{ env.TF_WORKING_DIR }}
 
         shell: bash
         env:
           TF_VARS: ${{ secrets.TF_VARS }}
+
+
+          
         run: |
           printf '%s' "$TF_VARS" > terraform.tfvars
 

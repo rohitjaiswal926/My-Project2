@@ -71,16 +71,19 @@ jobs:
           soft_fail: false
       # 9. Create terraform.tfvars from GitHub Secret
 
-      
+
 
       - name: Create Terraform Variables File
         working-directory: ${{ env.TF_WORKING_DIR }}
+
         shell: bash
         env:
           TF_VARS: ${{ secrets.TF_VARS }}
         run: |
           set -e
 
+
+          
           if [ -z "$TF_VARS" ]; then
             echo "ERROR: TF_VARS secret is empty."
             exit 1
