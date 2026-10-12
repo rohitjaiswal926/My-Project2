@@ -10,6 +10,8 @@ permissions:
 
 env:
   TF_WORKING_DIR: ./enviroment/preprod
+
+  
   TERRAFORM_VERSION: "1.14.6"
   ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
