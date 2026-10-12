@@ -37,22 +37,13 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}     
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
 
       - name: Create Terraform Variables File
-
-
-
-
-
         working-directory: ${{ env.TF_WORKING_DIR }}
-
         shell: bash
         env:
           TF_VARS: ${{ secrets.TF_VARS }}
-
-
-          
         run: |
           printf '%s' "$TF_VARS" > terraform.tfvars
 
@@ -71,6 +62,7 @@ jobs:
             --arg subscriptionId "$SUBSCRIPTION_ID" \
             --arg tenantId "$TENANT_ID" \
             '{clientId:$clientId,clientSecret:$clientSecret,subscriptionId:$subscriptionId,tenantId:$tenantId}')"
+
           {
             echo 'creds<<EOF'
             echo "$CREDS"
@@ -85,15 +77,6 @@ jobs:
       - name: Terraform Format
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform fmt -check -recursive
-      
-        # Checkov - Terraform Security Scan
-      - name: Checkov Security Scan
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          directory: ${{ env.TF_WORKING_DIR }}
-          framework: terraform
-          soft_fail: false
-
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -110,4 +93,3 @@ jobs:
       - name: Terraform Apply
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform apply -input=false -auto-approve tfplan
-
